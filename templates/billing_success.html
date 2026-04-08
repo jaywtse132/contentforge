@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card">
+    <h1>Payment Processing</h1>
+    <p>Thanks — your payment was submitted.</p>
+    <p class="muted">Your account will switch to Pro when Stripe confirms the webhook.</p>
+    <a href="{{ url_for('dashboard') }}" class="button-link">Back to Dashboard</a>
+</section>
+{% endblock %}
