@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 import stripe
 import os
 
@@ -17,7 +18,7 @@ stripe.api_key = "sk_test_your_key_here"
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.String(200), nullable=False)
     is_pro = db.Column(db.Boolean, default=False)
 
 # ------------------ ROUTES ------------------
@@ -35,13 +36,34 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
-        user = User.query.filter_by(email=email, password=password).first()
+        user = User.query.filter_by(email=email).first()
 
-        if user:
+        if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             return redirect('/dashboard')
 
     return render_template('login.html')
+
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return "User already exists"
+
+        hashed_password = generate_password_hash(password)
+
+        new_user = User(email=email, password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        return redirect('/login')
+
+    return render_template('signup.html')
 
 
 @app.route('/dashboard')
@@ -89,25 +111,7 @@ def logout():
     session.clear()
     return redirect('/login')
 
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
 
-        # check if user already exists
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            return "User already exists"
-
-        new_user = User(email=email, password=password)
-        db.session.add(new_user)
-        db.session.commit()
-
-        return redirect('/login')
-
-    return render_template('signup.html')
-    
 # ------------------ INIT ------------------
 if __name__ == '__main__':
     if not os.path.exists('database.db'):
