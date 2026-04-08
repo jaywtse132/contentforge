@@ -1,8 +1,8 @@
-from functools import wraps
 import os
-import secrets
+from functools import wraps
 
 import stripe
+from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, redirect, render_template, request, session, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -10,11 +10,13 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
+load_dotenv()
+
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(32)
 
 # ------------------ CONFIG ------------------
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///database.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -28,7 +30,9 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
-stripe.api_key = "sk_test_your_key_here"
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 
 # ------------------ MODELS ------------------
@@ -38,6 +42,8 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)
     is_pro = db.Column(db.Boolean, default=False, nullable=False)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    stripe_customer_id = db.Column(db.String(255), unique=True, nullable=True)
+    stripe_subscription_id = db.Column(db.String(255), unique=True, nullable=True)
 
 
 # ------------------ HELPERS ------------------
@@ -185,28 +191,92 @@ def pro_area():
 @login_required
 @limiter.limit("10 per hour")
 def create_checkout_session():
+    user = current_user()
+
+    if not STRIPE_PRICE_ID:
+        return jsonify({"error": "Stripe price ID is not configured"}), 500
+
     checkout_session = stripe.checkout.Session.create(
+        mode="subscription",
         payment_method_types=["card"],
         line_items=[
             {
-                "price": "price_REPLACE_ME",
+                "price": STRIPE_PRICE_ID,
                 "quantity": 1,
             }
         ],
-        mode="subscription",
-        success_url="http://localhost:5000/success",
+        customer_email=user.email,
+        metadata={
+            "user_id": str(user.id),
+        },
+        success_url="http://localhost:5000/billing-success",
         cancel_url="http://localhost:5000/upgrade",
     )
+
     return jsonify({"url": checkout_session.url})
 
 
-@app.route("/success")
+@app.route("/billing-success")
 @login_required
-def success():
+def billing_success():
     user = current_user()
-    user.is_pro = True
-    db.session.commit()
-    return redirect(url_for("dashboard"))
+    return render_template("billing_success.html", user=user)
+
+
+@app.route("/stripe-webhook", methods=["POST"])
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get("Stripe-Signature")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload,
+            sig_header,
+            STRIPE_WEBHOOK_SECRET,
+        )
+    except ValueError:
+        return "Invalid payload", 400
+    except stripe.error.SignatureVerificationError:
+        return "Invalid signature", 400
+
+    if event["type"] == "checkout.session.completed":
+        checkout_session = event["data"]["object"]
+
+        user_id = checkout_session.get("metadata", {}).get("user_id")
+        customer_id = checkout_session.get("customer")
+        subscription_id = checkout_session.get("subscription")
+
+        if user_id:
+            user = db.session.get(User, int(user_id))
+            if user:
+                user.is_pro = True
+                user.stripe_customer_id = customer_id
+                user.stripe_subscription_id = subscription_id
+                db.session.commit()
+
+    elif event["type"] == "customer.subscription.deleted":
+        subscription = event["data"]["object"]
+        subscription_id = subscription.get("id")
+
+        if subscription_id:
+            user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
+            if user:
+                user.is_pro = False
+                user.stripe_subscription_id = None
+                db.session.commit()
+
+    elif event["type"] == "customer.subscription.updated":
+        subscription = event["data"]["object"]
+        subscription_id = subscription.get("id")
+        status = subscription.get("status")
+
+        if subscription_id:
+            user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
+            if user:
+                user.is_pro = status in {"active", "trialing"}
+                db.session.commit()
+
+    return "OK", 200
 
 
 @app.route("/admin")
