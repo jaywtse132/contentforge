@@ -1,44 +1,52 @@
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import stripe
 import os
+import secrets
 
 app = Flask(__name__)
-app.secret_key = "super-secret-key"
+app.secret_key = secrets.token_hex(32)
 
-# DB
+# ------------------ CONFIG ------------------
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
 db = SQLAlchemy(app)
 
-# Stripe (replace later)
 stripe.api_key = "sk_test_your_key_here"
 
 # ------------------ MODELS ------------------
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     is_pro = db.Column(db.Boolean, default=False)
+
+# ------------------ HELPERS ------------------
+def login_required():
+    if "user_id" not in session:
+        return False
+    return True
 
 # ------------------ ROUTES ------------------
 
 @app.route('/')
 def home():
-    if "user_id" in session:
-        return redirect('/dashboard')
-    return redirect('/login')
+    return redirect('/dashboard' if "user_id" in session else '/login')
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        email = request.form.get('email')
+        password = request.form.get('password')
 
         user = User.query.filter_by(email=email).first()
 
         if user and check_password_hash(user.password, password):
+            session.clear()
             session['user_id'] = user.id
             return redirect('/dashboard')
 
@@ -48,17 +56,19 @@ def login():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        email = request.form.get('email')
+        password = request.form.get('password')
 
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
+        if not email or not password:
+            return "Invalid input"
+
+        if User.query.filter_by(email=email).first():
             return "User already exists"
 
         hashed_password = generate_password_hash(password)
 
-        new_user = User(email=email, password=hashed_password)
-        db.session.add(new_user)
+        user = User(email=email, password=hashed_password)
+        db.session.add(user)
         db.session.commit()
 
         return redirect('/login')
@@ -68,7 +78,7 @@ def signup():
 
 @app.route('/dashboard')
 def dashboard():
-    if "user_id" not in session:
+    if not login_required():
         return redirect('/login')
 
     user = User.query.get(session['user_id'])
@@ -77,7 +87,7 @@ def dashboard():
 
 @app.route('/upgrade')
 def upgrade():
-    if "user_id" not in session:
+    if not login_required():
         return redirect('/login')
 
     return render_template('upgrade.html')
@@ -85,6 +95,9 @@ def upgrade():
 
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
+    if not login_required():
+        abort(403)
+
     session_checkout = stripe.checkout.Session.create(
         payment_method_types=['card'],
         line_items=[{
@@ -100,9 +113,13 @@ def create_checkout_session():
 
 @app.route('/success')
 def success():
+    if not login_required():
+        return redirect('/login')
+
     user = User.query.get(session['user_id'])
     user.is_pro = True
     db.session.commit()
+
     return redirect('/dashboard')
 
 
