@@ -3,3 +3,4 @@ flask_sqlalchemy
 flask_limiter
 stripe
 werkzeug
+python-dotenv
