@@ -9,6 +9,7 @@
     <p class="success">You already have Pro.</p>
     {% else %}
     <button onclick="upgrade()">Go Pro</button>
+    <p class="muted">You will only get Pro after Stripe confirms payment.</p>
     {% endif %}
 </section>
 
@@ -17,7 +18,11 @@ function upgrade() {
     fetch('{{ url_for("create_checkout_session") }}', { method: 'POST' })
         .then(response => response.json())
         .then(data => {
-            window.location = data.url;
+            if (data.url) {
+                window.location = data.url;
+            } else if (data.error) {
+                alert(data.error);
+            }
         });
 }
 </script>
