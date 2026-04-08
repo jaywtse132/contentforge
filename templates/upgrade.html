@@ -1,1 +1,19 @@
+{% extends "base.html" %}
 
+{% block content %}
+
+<h1>Upgrade</h1>
+
+<button onclick="upgrade()">Go Pro</button>
+
+<script>
+function upgrade() {
+    fetch('/create-checkout-session', {method: 'POST'})
+    .then(res => res.json())
+    .then(data => {
+        window.location = data.url
+    })
+}
+</script>
+
+{% endblock %}
