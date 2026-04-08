@@ -89,7 +89,25 @@ def logout():
     session.clear()
     return redirect('/login')
 
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
 
+        # check if user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return "User already exists"
+
+        new_user = User(email=email, password=password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        return redirect('/login')
+
+    return render_template('signup.html')
+    
 # ------------------ INIT ------------------
 if __name__ == '__main__':
     if not os.path.exists('database.db'):
