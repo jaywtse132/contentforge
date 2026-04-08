@@ -8,6 +8,10 @@
 <form method="POST" class="card">
     <h2>Sign Up</h2>
 
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
     <input name="email" placeholder="Email" required>
     <input name="password" placeholder="Password" type="password" required>
 

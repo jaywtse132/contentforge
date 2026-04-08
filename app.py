@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, session, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import stripe
 import os
 import secrets
@@ -15,6 +17,13 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 db = SQLAlchemy(app)
 
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
 stripe.api_key = "sk_test_your_key_here"
 
 # ------------------ MODELS ------------------
@@ -26,9 +35,7 @@ class User(db.Model):
 
 # ------------------ HELPERS ------------------
 def login_required():
-    if "user_id" not in session:
-        return False
-    return True
+    return "user_id" in session
 
 # ------------------ ROUTES ------------------
 
@@ -38,10 +45,11 @@ def home():
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
 
         user = User.query.filter_by(email=email).first()
 
@@ -50,20 +58,23 @@ def login():
             session['user_id'] = user.id
             return redirect('/dashboard')
 
+        return render_template('login.html', error="Invalid email or password")
+
     return render_template('login.html')
 
 
 @app.route('/signup', methods=['GET', 'POST'])
+@limiter.limit("3 per minute")
 def signup():
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
 
         if not email or not password:
-            return "Invalid input"
+            return render_template('signup.html', error="Please fill in all fields")
 
         if User.query.filter_by(email=email).first():
-            return "User already exists"
+            return render_template('signup.html', error="User already exists")
 
         hashed_password = generate_password_hash(password)
 
@@ -94,6 +105,7 @@ def upgrade():
 
 
 @app.route('/create-checkout-session', methods=['POST'])
+@limiter.limit("10 per hour")
 def create_checkout_session():
     if not login_required():
         abort(403)
@@ -117,8 +129,9 @@ def success():
         return redirect('/login')
 
     user = User.query.get(session['user_id'])
-    user.is_pro = True
-    db.session.commit()
+    if user:
+        user.is_pro = True
+        db.session.commit()
 
     return redirect('/dashboard')
 
@@ -131,9 +144,7 @@ def logout():
 
 # ------------------ INIT ------------------
 if __name__ == '__main__':
-    if not os.path.exists('database.db'):
-        with app.app_context():
-            db.create_all()
-            print("Database created")
+    with app.app_context():
+        db.create_all()
 
     app.run(debug=True)

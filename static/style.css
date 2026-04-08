@@ -1,5 +1,5 @@
 body {
-    font-family: Arial;
+    font-family: Arial, sans-serif;
     background: #111;
     color: white;
     margin: 0;
@@ -24,6 +24,9 @@ body {
     background: #222;
     padding: 20px;
     border-radius: 10px;
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
 }
 
 input {
@@ -31,6 +34,7 @@ input {
     margin: 10px 0;
     padding: 10px;
     width: 100%;
+    box-sizing: border-box;
 }
 
 button {
@@ -39,6 +43,9 @@ button {
     border: none;
     color: white;
     cursor: pointer;
+    width: 100%;
+    margin-top: 10px;
+    border-radius: 6px;
 }
 
 .center {
@@ -46,4 +53,25 @@ button {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.pro {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.free {
+    color: #f5c542;
+    font-weight: bold;
+}
+
+.error {
+    background: #3a1717;
+    color: #ff8f8f;
+    border: 1px solid #7a2b2b;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
 }
