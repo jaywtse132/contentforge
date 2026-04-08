@@ -193,22 +193,12 @@ def pro_area():
 def create_checkout_session():
     user = current_user()
 
-    if not STRIPE_PRICE_ID:
-        return jsonify({"error": "Stripe price ID is not configured"}), 500
-
     checkout_session = stripe.checkout.Session.create(
         mode="subscription",
         payment_method_types=["card"],
-        line_items=[
-            {
-                "price": STRIPE_PRICE_ID,
-                "quantity": 1,
-            }
-        ],
+        line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
         customer_email=user.email,
-        metadata={
-            "user_id": str(user.id),
-        },
+        metadata={"user_id": str(user.id)},
         success_url="http://localhost:5000/billing-success",
         cancel_url="http://localhost:5000/upgrade",
     )
@@ -223,6 +213,7 @@ def billing_success():
     return render_template("billing_success.html", user=user)
 
 
+# ------------------ WEBHOOK ------------------
 @app.route("/stripe-webhook", methods=["POST"])
 def stripe_webhook():
     payload = request.data
@@ -234,115 +225,70 @@ def stripe_webhook():
             sig_header,
             STRIPE_WEBHOOK_SECRET,
         )
-    except ValueError:
-        return "Invalid payload", 400
-    except stripe.error.SignatureVerificationError:
-        return "Invalid signature", 400
+    except Exception as e:
+        print("Webhook signature error:", e)
+        return "Invalid", 400
 
-    if event["type"] == "checkout.session.completed":
-        checkout_session = event["data"]["object"]
+    try:
+        print("EVENT TYPE:", event["type"])
 
-        user_id = checkout_session.get("metadata", {}).get("user_id")
-        customer_id = checkout_session.get("customer")
-        subscription_id = checkout_session.get("subscription")
+        if event["type"] == "checkout.session.completed":
+            session_obj = event["data"]["object"]
+            print("CHECKOUT SESSION:", session_obj)
 
-        if user_id:
+            user_id = session_obj.get("metadata", {}).get("user_id")
+            customer_id = session_obj.get("customer")
+            subscription_id = session_obj.get("subscription")
+
+            if not user_id:
+                print("No user_id in metadata")
+                return "OK", 200
+
             user = db.session.get(User, int(user_id))
-            if user:
-                user.is_pro = True
+            if not user:
+                print("User not found:", user_id)
+                return "OK", 200
+
+            user.is_pro = True
+
+            if customer_id:
                 user.stripe_customer_id = customer_id
+
+            if subscription_id:
                 user.stripe_subscription_id = subscription_id
-                db.session.commit()
 
-    elif event["type"] == "customer.subscription.deleted":
-        subscription = event["data"]["object"]
-        subscription_id = subscription.get("id")
+            db.session.commit()
+            print("User upgraded:", user.email)
 
-        if subscription_id:
+        elif event["type"] == "customer.subscription.deleted":
+            subscription = event["data"]["object"]
+            subscription_id = subscription.get("id")
+
             user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
             if user:
                 user.is_pro = False
                 user.stripe_subscription_id = None
                 db.session.commit()
+                print("Subscription cancelled:", user.email)
 
-    elif event["type"] == "customer.subscription.updated":
-        subscription = event["data"]["object"]
-        subscription_id = subscription.get("id")
-        status = subscription.get("status")
+        elif event["type"] == "customer.subscription.updated":
+            subscription = event["data"]["object"]
+            subscription_id = subscription.get("id")
+            status = subscription.get("status")
 
-        if subscription_id:
             user = User.query.filter_by(stripe_subscription_id=subscription_id).first()
             if user:
                 user.is_pro = status in {"active", "trialing"}
                 db.session.commit()
+                print("Subscription updated:", user.email, status)
+
+    except Exception as e:
+        import traceback
+        print("WEBHOOK ERROR:", e)
+        traceback.print_exc()
+        return "Error", 500
 
     return "OK", 200
-
-
-@app.route("/admin")
-@admin_required
-def admin_panel():
-    user = current_user()
-    users = User.query.order_by(User.id.asc()).all()
-    return render_template("admin.html", user=user, users=users)
-
-
-@app.route("/admin/toggle-pro/<int:user_id>", methods=["POST"])
-@admin_required
-def toggle_pro(user_id):
-    target_user = db.session.get(User, user_id)
-    if target_user:
-        target_user.is_pro = not target_user.is_pro
-        db.session.commit()
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/admin/toggle-admin/<int:user_id>", methods=["POST"])
-@admin_required
-def toggle_admin(user_id):
-    target_user = db.session.get(User, user_id)
-    acting_user = current_user()
-
-    if target_user and target_user.id != acting_user.id:
-        target_user.is_admin = not target_user.is_admin
-        db.session.commit()
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/admin/delete-user/<int:user_id>", methods=["POST"])
-@admin_required
-def delete_user(user_id):
-    target_user = db.session.get(User, user_id)
-    acting_user = current_user()
-
-    if target_user and target_user.id != acting_user.id:
-        db.session.delete(target_user)
-        db.session.commit()
-
-    return redirect(url_for("admin_panel"))
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-
-# ------------------ ERROR PAGES ------------------
-@app.errorhandler(403)
-def forbidden(_error):
-    return render_template("403.html"), 403
-
-
-@app.errorhandler(404)
-def not_found(_error):
-    return render_template("404.html"), 404
-
-
-@app.errorhandler(500)
-def server_error(_error):
-    return render_template("500.html"), 500
 
 
 # ------------------ INIT ------------------
