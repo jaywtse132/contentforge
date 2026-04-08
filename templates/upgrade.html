@@ -1,19 +1,24 @@
 {% extends "base.html" %}
 
 {% block content %}
+<section class="card">
+    <h1>Upgrade</h1>
+    <p>Unlock the pro area and future premium features.</p>
 
-<h1>Upgrade</h1>
-
-<button onclick="upgrade()">Go Pro</button>
+    {% if user.is_pro %}
+    <p class="success">You already have Pro.</p>
+    {% else %}
+    <button onclick="upgrade()">Go Pro</button>
+    {% endif %}
+</section>
 
 <script>
 function upgrade() {
-    fetch('/create-checkout-session', {method: 'POST'})
-    .then(res => res.json())
-    .then(data => {
-        window.location = data.url
-    })
+    fetch('{{ url_for("create_checkout_session") }}', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            window.location = data.url;
+        });
 }
 </script>
-
 {% endblock %}
