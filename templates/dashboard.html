@@ -1,1 +1,16 @@
+{% extends "base.html" %}
 
+{% block content %}
+
+<h1>Dashboard</h1>
+
+<p>Email: {{ user.email }}</p>
+
+{% if user.is_pro %}
+    <p class="pro">PRO USER</p>
+{% else %}
+    <p class="free">Free Plan</p>
+    <a href="/upgrade"><button>Upgrade</button></a>
+{% endif %}
+
+{% endblock %}
