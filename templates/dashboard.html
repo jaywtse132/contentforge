@@ -1,16 +1,32 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="grid">
+    <section class="card">
+        <h1>Dashboard</h1>
+        <p><strong>Email:</strong> {{ user.email }}</p>
 
-<h1>Dashboard</h1>
+        {% if user.is_pro %}
+        <p class="pro">Pro Plan</p>
+        {% else %}
+        <p class="free">Free Plan</p>
+        <a href="{{ url_for('upgrade') }}" class="button-link">Upgrade to Pro</a>
+        {% endif %}
 
-<p>Email: {{ user.email }}</p>
+        {% if user.is_admin %}
+        <p class="badge">Admin access enabled</p>
+        {% endif %}
+    </section>
 
-{% if user.is_pro %}
-    <p class="pro">PRO USER</p>
-{% else %}
-    <p class="free">Free Plan</p>
-    <a href="/upgrade"><button>Upgrade</button></a>
-{% endif %}
-
+    <section class="card">
+        <h2>Skeleton Status</h2>
+        <ul class="clean-list">
+            <li>Authentication</li>
+            <li>Rate limiting</li>
+            <li>Account page</li>
+            <li>Admin panel</li>
+            <li>Pro-only area</li>
+        </ul>
+    </section>
+</div>
 {% endblock %}
