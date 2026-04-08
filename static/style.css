@@ -1,1 +1,49 @@
+body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+    margin: 0;
+}
 
+.nav {
+    background: #222;
+    padding: 10px;
+}
+
+.nav a {
+    margin-right: 15px;
+    color: white;
+    text-decoration: none;
+}
+
+.container {
+    padding: 30px;
+}
+
+.card {
+    background: #222;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+input {
+    display: block;
+    margin: 10px 0;
+    padding: 10px;
+    width: 100%;
+}
+
+button {
+    padding: 10px;
+    background: #4CAF50;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
