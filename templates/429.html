@@ -2,12 +2,12 @@
 
 {% block content %}
 <section class="card" style="text-align: center;">
-    <h1>500</h1>
-    <h2>Something went wrong</h2>
+    <h1>429</h1>
+    <h2>Too many requests</h2>
 
-    <p>We ran into an unexpected error.</p>
+    <p>You’re doing that too often. Please wait a moment and try again.</p>
 
-    <p style="opacity: 0.7;">Try refreshing the page. If it keeps happening, come back later.</p>
+    <p style="opacity: 0.7;">This helps prevent spam and keeps things running smoothly.</p>
 
     <div style="margin-top: 20px;">
         <a href="{{ url_for('dashboard') if session.get('user_id') else url_for('login') }}">

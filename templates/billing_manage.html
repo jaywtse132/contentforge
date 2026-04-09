@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-card success-card">
+    <div class="eyebrow">Billing</div>
+    <h1>Subscription update</h1>
+    <p class="lead">{{ status_message }}</p>
+
+    {% if end_date %}
+        <div class="status-box status-good" style="margin-top: 20px;">
+            <strong>{{ end_date }}</strong>
+        </div>
+    {% endif %}
+
+    <div class="hero-actions" style="margin-top: 24px;">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+        <a href="{{ url_for('pro') }}" class="btn btn-secondary">Back to Pro Area</a>
+    </div>
+</section>
+{% endblock %}

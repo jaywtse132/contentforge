@@ -1,9 +1,57 @@
 {% extends "base.html" %}
-
 {% block content %}
-<section class="card">
-    <h1>Pro Area</h1>
-    <p>This is the gated pro-only section.</p>
-    <p class="muted">Perfect placeholder for premium features later.</p>
+<section class="hero-card">
+    <div class="eyebrow">Pro Area</div>
+    <h1>Premium unlocked</h1>
+    <p class="lead">This is your protected space for paid features, premium tools, and anything you only want available to subscribers.</p>
+
+    <div class="badge-row">
+        <span class="pill pill-pro">Pro member</span>
+        {% if user.is_admin %}
+            <span class="pill pill-admin">Admin</span>
+        {% endif %}
+    </div>
+
+    <!-- NEW: Manage Billing Button -->
+    <div class="hero-actions" style="margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="openBilling()">Manage Billing</button>
+    </div>
 </section>
+
+<section class="card-grid">
+    <article class="panel-card">
+        <div class="panel-label">Access</div>
+        <h2>Protected content</h2>
+        <p>This page confirms your premium gate is doing its job.</p>
+    </article>
+
+    <article class="panel-card">
+        <div class="panel-label">Ideas</div>
+        <h2>What lives here next?</h2>
+        <ul class="feature-list">
+            <li>Premium generators</li>
+            <li>Saved outputs</li>
+            <li>Advanced tools</li>
+            <li>Member-only experiments</li>
+        </ul>
+    </article>
+</section>
+
+<!-- NEW: Billing JS -->
+<script>
+async function openBilling() {
+    try {
+        const response = await fetch('{{ url_for("create_billing_portal") }}', { method: 'POST' });
+        const data = await response.json();
+
+        if (data.url) {
+            window.location = data.url;
+        } else {
+            alert(data.error || "Couldn't open billing");
+        }
+    } catch (err) {
+        alert("Something went wrong");
+    }
+}
+</script>
 {% endblock %}

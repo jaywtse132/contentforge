@@ -1,29 +1,50 @@
 {% extends "base.html" %}
-
 {% block content %}
-<section class="card">
-    <h1>Upgrade</h1>
-    <p>Unlock the pro area and future premium features.</p>
+<section class="pricing-shell">
+    <article class="pricing-card">
+        <div class="eyebrow">Upgrade</div>
+        <h1>Go Pro</h1>
+        <p class="lead">Unlock the premium area and give the app a proper paid tier.</p>
 
-    {% if user.is_pro %}
-    <p class="success">You already have Pro.</p>
-    {% else %}
-    <button onclick="upgrade()">Go Pro</button>
-    <p class="muted">You will only get Pro after Stripe confirms payment.</p>
-    {% endif %}
+        <div class="price-row">
+            <span class="price-main">Pro</span>
+            <span class="price-side">Subscription</span>
+        </div>
+
+        <ul class="feature-list premium-list">
+            <li>Access the Pro-only area</li>
+            <li>Future premium features ready to gate</li>
+            <li>Stripe-powered upgrade flow</li>
+            <li>Clean path for subscriptions and billing</li>
+        </ul>
+
+        {% if user.is_pro %}
+            <div class="status-box status-good">
+                <strong>Pro is already active.</strong>
+                <span>This account has premium access right now.</span>
+            </div>
+            <a href="{{ url_for('pro') }}" class="btn btn-primary">Open Pro Area</a>
+        {% else %}
+            <button class="btn btn-primary btn-wide" onclick="upgrade()">Go Pro</button>
+            <p class="muted-note">Your account upgrades after Stripe confirms payment.</p>
+        {% endif %}
+    </article>
 </section>
 
 <script>
-function upgrade() {
-    fetch('{{ url_for("create_checkout_session") }}', { method: 'POST' })
-        .then(response => response.json())
-        .then(data => {
-            if (data.url) {
-                window.location = data.url;
-            } else if (data.error) {
-                alert(data.error);
-            }
-        });
+async function upgrade() {
+    try {
+        const response = await fetch('{{ url_for("create_checkout_session") }}', { method: 'POST' });
+        const data = await response.json();
+
+        if (data.url) {
+            window.location = data.url;
+        } else {
+            alert(data.error || 'Unable to start checkout.');
+        }
+    } catch (error) {
+        alert('Something went wrong starting checkout.');
+    }
 }
 </script>
 {% endblock %}

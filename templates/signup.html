@@ -1,29 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - ContentForge</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body class="center">
-    <form method="POST" class="card auth-card">
-        <h1>Create account</h1>
+{% extends "base.html" %}
+{% block content %}
+<section class="hero-card auth-card">
+    <div class="eyebrow">Create account</div>
+    <h1>Start with a clean workspace</h1>
+    <p class="lead">Make your account, get into the dashboard, and unlock Pro whenever you’re ready.</p>
 
-        {% if error %}
-        <p class="error">{{ error }}</p>
-        {% endif %}
+    <form method="POST" class="stack-form">
+        <label>
+            <span>Email</span>
+            <input type="email" name="email" placeholder="you@example.com" required>
+        </label>
 
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" placeholder="Email" required>
+        <label>
+            <span>Password</span>
+            <input type="password" name="password" placeholder="At least 8 characters" required>
+        </label>
 
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" placeholder="Password" required>
-
-        <button type="submit">Create Account</button>
-
-        <p class="muted">Already have an account?</p>
-        <a href="{{ url_for('login') }}" class="text-link">Login</a>
+        <button class="btn btn-primary" type="submit">Create account</button>
     </form>
-</body>
-</html>
+
+    <p class="form-foot">
+        Already have an account?
+        <a href="{{ url_for('login') }}">Log in</a>
+    </p>
+</section>
+{% endblock %}

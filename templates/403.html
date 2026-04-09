@@ -1,8 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="card">
+<section class="card" style="text-align: center;">
     <h1>403</h1>
-    <p>You do not have access to this page.</p>
+    <h2>Access denied</h2>
+
+    <p>You don’t have permission to view this page.</p>
+
+    <p style="opacity: 0.7;">If you think this is a mistake, try logging in with a different account.</p>
+
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('dashboard') if session.get('user_id') else url_for('login') }}">
+            <button>Go back</button>
+        </a>
+    </div>
 </section>
 {% endblock %}

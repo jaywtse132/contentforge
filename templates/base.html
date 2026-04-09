@@ -1,33 +1,40 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ContentForge</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <nav class="nav">
-        <div class="nav-left">
-            <a href="{{ url_for('dashboard') }}" class="brand">ContentForge</a>
-        </div>
+    <div class="site-shell">
+        <header class="topbar">
+            <div class="brand-wrap">
+                <a class="brand" href="{{ url_for('dashboard') if user else url_for('login') }}">
+                    <span class="brand-mark">CF</span>
+                    <span class="brand-text">
+                        <strong>ContentForge</strong>
+                        <span>Build, ship, upgrade</span>
+                    </span>
+                </a>
+            </div>
 
-        {% if session.get('user_id') %}
-        <div class="nav-right">
-            <a href="{{ url_for('dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('account') }}">Account</a>
-            <a href="{{ url_for('pro_area') }}">Pro</a>
-            <a href="{{ url_for('upgrade') }}">Upgrade</a>
-            {% if user and user.is_admin %}
-            <a href="{{ url_for('admin_panel') }}">Admin</a>
-            {% endif %}
-            <a href="{{ url_for('logout') }}">Logout</a>
-        </div>
-        {% endif %}
-    </nav>
+            <nav class="topnav">
+                {% if user %}
+                    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('upgrade') }}">Upgrade</a>
+                    <a href="{{ url_for('pro') }}">Pro Area</a>
+                    <a href="{{ url_for('logout') }}" class="ghost-link">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}">Login</a>
+                    <a href="{{ url_for('signup') }}">Sign up</a>
+                {% endif %}
+            </nav>
+        </header>
 
-    <main class="container">
-        {% block content %}{% endblock %}
-    </main>
+        <main class="page-wrap">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
 </body>
 </html>

@@ -1,32 +1,61 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="grid">
-    <section class="card">
-        <h1>Dashboard</h1>
-        <p><strong>Email:</strong> {{ user.email }}</p>
+<section class="hero-card dashboard-hero">
+    <div class="hero-copy">
+        <div class="eyebrow">Dashboard</div>
+        <h1>Hey {{ user.email }}</h1>
+        <p class="lead">Your app core is alive. Payments work. Now the front end gets to look the part.</p>
 
+        <div class="badge-row">
+            {% if user.is_pro %}
+                <span class="pill pill-pro">Pro active</span>
+            {% else %}
+                <span class="pill pill-free">Free plan</span>
+            {% endif %}
+
+            {% if user.is_admin %}
+                <span class="pill pill-admin">Admin</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="hero-actions">
         {% if user.is_pro %}
-        <p class="pro">Pro Plan</p>
+            <a href="{{ url_for('pro') }}" class="btn btn-primary">Enter Pro Area</a>
         {% else %}
-        <p class="free">Free Plan</p>
-        <a href="{{ url_for('upgrade') }}" class="button-link">Upgrade to Pro</a>
+            <a href="{{ url_for('upgrade') }}" class="btn btn-primary">Upgrade to Pro</a>
         {% endif %}
+        <a href="{{ url_for('logout') }}" class="btn btn-secondary">Log out</a>
+    </div>
+</section>
 
-        {% if user.is_admin %}
-        <p class="badge">Admin access enabled</p>
+<section class="card-grid">
+    <article class="panel-card">
+        <div class="panel-label">Plan</div>
+        {% if user.is_pro %}
+            <h2>Pro Plan</h2>
+            <p>Premium access is active on this account. You’re clear to gate features behind Pro now.</p>
+        {% else %}
+            <h2>Free Plan</h2>
+            <p>You’re on the free tier right now. Upgrade whenever you want the premium flow to kick in.</p>
         {% endif %}
-    </section>
+    </article>
 
-    <section class="card">
-        <h2>Skeleton Status</h2>
-        <ul class="clean-list">
-            <li>Authentication</li>
-            <li>Rate limiting</li>
-            <li>Account page</li>
-            <li>Admin panel</li>
-            <li>Pro-only area</li>
+    <article class="panel-card">
+        <div class="panel-label">Status</div>
+        <h2>Core system stable</h2>
+        <ul class="feature-list">
+            <li>Authentication working</li>
+            <li>Stripe checkout linked</li>
+            <li>Webhook upgrade flow working</li>
+            <li>Pro route protection ready</li>
         </ul>
-    </section>
-</div>
+    </article>
+
+    <article class="panel-card">
+        <div class="panel-label">Next move</div>
+        <h2>Make it feel real</h2>
+        <p>Polish the UI, lock premium features, and start shaping the app into something people actually want to use.</p>
+    </article>
+</section>
 {% endblock %}
