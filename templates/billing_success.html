@@ -3,7 +3,12 @@
 <section class="hero-card success-card">
     <div class="eyebrow">Payment complete</div>
     <h1>Nice. Stripe did its thing.</h1>
-    <p class="lead">Your checkout finished successfully. The webhook handles the actual upgrade in the background, and your dashboard should reflect Pro once that lands.</p>
+
+    {% if payment_status == 'paid' %}
+        <p class="lead">Your checkout session is marked as paid. Your account upgrades when the Stripe webhook syncs your subscription status.</p>
+    {% else %}
+        <p class="lead">Your checkout finished successfully. Stripe is still syncing the final subscription state, so Pro may take a moment to show up on your account.</p>
+    {% endif %}
 
     <div class="hero-actions">
         <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>

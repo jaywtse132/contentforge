@@ -41,7 +41,7 @@
 <script>
 async function openBilling() {
     try {
-        const response = await fetch('{{ url_for("create_billing_portal") }}', { method: 'POST' });
+        const response = await window.ContentForge.post('{{ url_for("create_billing_portal") }}');
         const data = await response.json();
 
         if (data.url) {

@@ -5,7 +5,12 @@
     <h1>Start with a clean workspace</h1>
     <p class="lead">Make your account, get into the dashboard, and unlock Pro whenever you’re ready.</p>
 
+    {% if error %}
+        <div class="status-box status-bad">{{ error }}</div>
+    {% endif %}
+
     <form method="POST" class="stack-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>
             <span>Email</span>
             <input type="email" name="email" placeholder="you@example.com" required>
@@ -13,7 +18,7 @@
 
         <label>
             <span>Password</span>
-            <input type="password" name="password" placeholder="At least 8 characters" required>
+            <input type="password" name="password" placeholder="At least 12 characters" required>
         </label>
 
         <button class="btn btn-primary" type="submit">Create account</button>

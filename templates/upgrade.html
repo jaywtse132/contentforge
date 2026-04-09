@@ -34,7 +34,7 @@
 <script>
 async function upgrade() {
     try {
-        const response = await fetch('{{ url_for("create_checkout_session") }}', { method: 'POST' });
+        const response = await window.ContentForge.post('{{ url_for("create_checkout_session") }}');
         const data = await response.json();
 
         if (data.url) {
